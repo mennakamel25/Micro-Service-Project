@@ -11,6 +11,7 @@ otelCollectorEndpointHttp: "4318"
 services:
   accounting:
     image: accounting
+    tag: '18'
     port: null
     memory: 120Mi
     env:
@@ -20,6 +21,7 @@ services:
 
   ad:
     image: ad
+    tag: '21'
     port: 9099
     memory: 300Mi
     env:
@@ -31,6 +33,7 @@ services:
 
   cart:
     image: cart
+    tag: '18'
     port: 8080
     memory: 160Mi
     env:
@@ -44,6 +47,7 @@ services:
 
   checkout:
     image: checkout
+    tag: '20'
     port: 8080
     memory: 20Mi
     env:
@@ -62,6 +66,7 @@ services:
 
   currency:
     image: currency
+    tag: '18'
     port: 8080
     memory: 20Mi
     env:
@@ -71,6 +76,7 @@ services:
 
   email:
     image: email
+    tag: '21'
     port: 8080
     memory: 100Mi
     env:
@@ -86,6 +92,7 @@ services:
 
   flagd-ui:
     image: flagd-ui
+    tag: '21'
     port: 4000
     memory: 75Mi
     env:
@@ -94,6 +101,7 @@ services:
 
   fraud-detection:
     image: fraud-detection
+    tag: '18'
     port: null
     memory: 300Mi
     env:
@@ -105,6 +113,7 @@ services:
 
   frontend:
     image: frontend
+    tag: '18'
     port: 8080
     memory: 250Mi
     securityContext:
@@ -130,6 +139,7 @@ services:
 
   frontend-proxy:
     image: frontend-proxy
+    tag: '21'
     port: 8080
     memory: 50Mi
     securityContext:
@@ -154,6 +164,7 @@ services:
 
   image-provider:
     image: image-provider
+    tag: '21'
     port: 8081
     memory: 50Mi
     env:
@@ -163,6 +174,7 @@ services:
 
   kafka:
     image: kafka
+    tag: '20'
     port: 9092
     port2: 9093
     memory: 600Mi
@@ -177,6 +189,7 @@ services:
 
   load-generator:
     image: load-generator
+    tag: '21'
     port: 8089
     memory: 1500Mi
     env:
@@ -194,6 +207,7 @@ services:
 
   payment:
     image: payment
+    tag: '18'
     port: 8080
     memory: 120Mi
     securityContext:
@@ -208,6 +222,7 @@ services:
 
   product-catalog:
     image: product-catalog
+    tag: '21'
     port: 8080
     memory: 20Mi
     env:
@@ -218,6 +233,7 @@ services:
 
   quote:
     image: quote
+    tag: '18'
     port: 8080
     memory: 40Mi
     securityContext:
@@ -231,6 +247,7 @@ services:
 
   recommendation:
     image: recommendation
+    tag: '21'
     port: 8080
     memory: 500Mi
     env:
@@ -244,6 +261,7 @@ services:
 
   shipping:
     image: shipping
+    tag: '18'
     port: 8080
     memory: 20Mi
     env:
