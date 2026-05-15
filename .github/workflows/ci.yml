@@ -22,87 +22,87 @@ jobs:
         include:
 
           - service: accounting
-            dockerfile: ./src/accounting/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/accounting
 
           - service: ad
-            dockerfile: ./src/ad/Dockerfile
+            dockerfile: Dockerfile
             context: ./src/ad
 
           - service: cart
-            dockerfile: ./src/cart/src/Dockerfile
-            context: .
+            dockerfile: src/Dockerfile
+            context: ./src/cart
 
           - service: checkout
-            dockerfile: ./src/checkout/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/checkout
 
           - service: currency
-            dockerfile: ./src/currency/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/currency
             build_args: --build-arg OPENTELEMETRY_CPP_VERSION=1.14.2
 
           - service: email
-            dockerfile: ./src/email/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/email
 
           - service: flagd-ui
-            dockerfile: ./src/flagd-ui/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/flagd-ui
 
           - service: fraud-detection
-            dockerfile: ./src/fraud-detection/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/fraud-detection
             build_args: --build-arg OTEL_JAVA_AGENT_VERSION=2.9.0
 
           - service: frontend
-            dockerfile: ./src/frontend/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/frontend
 
           - service: frontend-proxy
-            dockerfile: ./src/frontend-proxy/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/frontend-proxy
 
           - service: image-provider
-            dockerfile: ./src/image-provider/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/image-provider
 
           - service: kafka
-            dockerfile: ./src/kafka/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/kafka
             build_args: --build-arg OTEL_JAVA_AGENT_VERSION=2.9.0
 
           - service: load-generator
-            dockerfile: ./src/load-generator/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/load-generator
 
           - service: opensearch
-            dockerfile: ./src/opensearch/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/opensearch
 
           - service: payment
-            dockerfile: ./src/payment/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/payment
 
           - service: postgres
-            dockerfile: ./src/postgres/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/postgres
 
           - service: product-catalog
-            dockerfile: ./src/product-catalog/Dockerfile
+            dockerfile: Dockerfile
             context: ./src/product-catalog
 
           - service: quote
-            dockerfile: ./src/quote/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/quote
 
           - service: recommendation
-            dockerfile: ./src/recommendation/Dockerfile
+            dockerfile: Dockerfile
             context: ./src/recommendation
 
           - service: shipping
-            dockerfile: ./src/shipping/Dockerfile
-            context: .
+            dockerfile: Dockerfile
+            context: ./src/shipping
 
     steps:
       - name: Checkout code
