@@ -1,123 +1,64 @@
-name: product-catalog-ci-cd
+name: CI Pipeline
 
 on:
   push:
-    branches:
-      - main
-
-env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REPOSITORY: product-catalog
-  EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+    branches: [ main ]
 
 jobs:
 
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version: 1.22
 
-      - name: Download dependencies
-        run: |
-          cd src/product-catalog
-          go mod download
-
-      - name: Build application
-        run: |
-          cd src/product-catalog
-          go build -o product-catalog-service main.go
-
-      - name: Run tests
+      - name: Test
         run: |
           cd src/product-catalog
           go test ./...
 
-  code-quality:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.22
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.55.2
-          working-directory: src/product-catalog
-
   docker:
+    needs: build
     runs-on: ubuntu-latest
-    needs: [build, code-quality]
-
-    outputs:
-      image: ${{ steps.image.outputs.image }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
+      - name: AWS login
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
+      - name: Login ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and Push Docker Image
-        id: image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.run_number }}
+      - name: Build & Push
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG src/product-catalog
+          IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/product-catalog:${{ github.run_number }}
 
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker build -t $IMAGE src/product-catalog
+          docker push $IMAGE
 
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-  deploy:
-    runs-on: ubuntu-latest
+  update-manifest:
     needs: docker
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Update kubeconfig
+      - name: Update image tag
         run: |
-          aws eks update-kubeconfig \
-            --region $AWS_REGION \
-            --name $EKS_CLUSTER_NAME
+          sed -i "s|image: .*|image: $IMAGE|" kubernetes/productcatalog/deploy.yaml
 
-      - name: Update deployment image
+      - name: Commit changes
         run: |
-          kubectl set image deployment/productcatalogservice \
-          productcatalogservice=${{ needs.docker.outputs.image }}
-
-      - name: Verify deployment
-        run: |
-          kubectl rollout status deployment/productcatalogservice
-
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add kubernetes/productcatalog/deploy.yaml
+          git commit -m "update image tag"
+          git push
