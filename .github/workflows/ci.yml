@@ -4,31 +4,45 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
 jobs:
-
   build-and-push:
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         include:
-
           - service: accounting
             context: ./src/accounting
             dockerfile: ./src/accounting/Dockerfile
+
+          - service: ad
+            context: ./src/ad
+            dockerfile: ./src/ad/Dockerfile
 
           - service: cart
             context: ./src/cart
             dockerfile: ./src/cart/src/Dockerfile
 
+          - service: checkout
+            context: ./src/checkout
+            dockerfile: ./src/checkout/Dockerfile
+
           - service: currency
             context: ./src/currency
             dockerfile: ./src/currency/Dockerfile
+
+          - service: email
+            context: ./src/email
+            dockerfile: ./src/email/Dockerfile
 
           - service: flagd-ui
             context: ./src/flagd-ui
@@ -38,34 +52,6 @@ jobs:
             context: ./src/fraud-detection
             dockerfile: ./src/fraud-detection/Dockerfile
 
-          - service: product-catalog
-            context: ./src/product-catalog
-            dockerfile: ./src/product-catalog/Dockerfile
-
-          - service: image-provider
-            context: ./src/image-provider
-            dockerfile: ./src/image-provider/Dockerfile
-
-          - service: load-generator
-            context: ./src/load-generator
-            dockerfile: ./src/load-generator/Dockerfile
-
-          - service: checkout
-            context: ./src/checkout
-            dockerfile: ./src/checkout/Dockerfile
-
-          - service: payment
-            context: ./src/payment
-            dockerfile: ./src/payment/Dockerfile
-
-          - service: shipping
-            context: ./src/shipping
-            dockerfile: ./src/shipping/Dockerfile
-
-          - service: recommendation
-            context: ./src/recommendation
-            dockerfile: ./src/recommendation/Dockerfile
-
           - service: frontend
             context: ./src/frontend
             dockerfile: ./src/frontend/Dockerfile
@@ -74,39 +60,71 @@ jobs:
             context: ./src/frontend-proxy
             dockerfile: ./src/frontend-proxy/Dockerfile
 
-          - service: email
-            context: ./src/email
-            dockerfile: ./src/email/Dockerfile
+          - service: image-provider
+            context: ./src/image-provider
+            dockerfile: ./src/image-provider/Dockerfile
 
-          - service: ad
-            context: ./src/ad
-            dockerfile: ./src/ad/Dockerfile
+          - service: kafka
+            context: ./src/kafka
+            dockerfile: ./src/kafka/Dockerfile
+
+          - service: load-generator
+            context: ./src/load-generator
+            dockerfile: ./src/load-generator/Dockerfile
+
+          - service: opensearch
+            context: ./src/opensearch
+            dockerfile: ./src/opensearch/Dockerfile
+
+          - service: payment
+            context: ./src/payment
+            dockerfile: ./src/payment/Dockerfile
+
+          - service: postgres
+            context: ./src/postgres
+            dockerfile: ./src/postgres/Dockerfile
+
+          - service: product-catalog
+            context: ./src/product-catalog
+            dockerfile: ./src/product-catalog/Dockerfile
+
+          - service: quote
+            context: ./src/quote
+            dockerfile: ./src/quote/Dockerfile
+
+          - service: recommendation
+            context: ./src/recommendation
+            dockerfile: ./src/recommendation/Dockerfile
+
+          - service: shipping
+            context: ./src/shipping
+            dockerfile: ./src/shipping/Dockerfile
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure AWS
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to ECR
+      - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Docker image
         run: |
-          IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${{ matrix.service }}:${{ github.run_number }}
-
+          IMAGE=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.service }}:${{ github.run_number }}
+          
           docker build \
-            -f ${{ matrix.dockerfile }} \
             -t $IMAGE \
+            -f ${{ matrix.dockerfile }} \
             ${{ matrix.context }}
 
       - name: Push Docker image
         run: |
-          IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${{ matrix.service }}:${{ github.run_number }}
-
+          IMAGE=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.service }}:${{ github.run_number }}
+          
           docker push $IMAGE
