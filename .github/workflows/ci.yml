@@ -16,9 +16,13 @@ jobs:
 
     strategy:
       matrix:
-        service:
+       include:
+
           - accounting
-          - cart
+           - service: cart
+            context: ./src/cart
+            dockerfile: ./src/cart/src/Dockerfile
+
           - currency
           - flagd-ui
           - fraud-detection
