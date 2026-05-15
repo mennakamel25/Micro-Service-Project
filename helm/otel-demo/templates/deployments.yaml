@@ -1,0 +1,1051 @@
+# ─── accounting ───────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accounting
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: accounting
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: accounting
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: accounting
+        app.kubernetes.io/component: accounting
+    spec:
+      serviceAccountName: otel-demo
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:latest
+          command: ["sh", "-c", "until nc -z -v -w30 kafka 9092; do echo waiting for kafka; sleep 2; done;"]
+      containers:
+        - name: accounting
+          image: {{ .Values.registry }}/accounting:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: KAFKA_SERVICE_ADDR
+              value: "kafka:9092"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4318"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 120Mi
+---
+# ─── ad ───────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ad
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: ad
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ad
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ad
+        app.kubernetes.io/component: adservice
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: ad
+          image: {{ .Values.registry }}/ad:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 9099
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: AD_SERVICE_PORT
+              value: "9099"
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4318"
+            - name: OTEL_LOGS_EXPORTER
+              value: otlp
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 300Mi
+---
+# ─── cart ─────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: cart
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cart
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cart
+        app.kubernetes.io/component: cartservice
+    spec:
+      serviceAccountName: otel-demo
+      initContainers:
+        - name: wait-for-valkey
+          image: busybox:latest
+          command: ["sh", "-c", "until nc -z -v -w30 valkey 6379; do echo waiting for valkey; sleep 2; done;"]
+      containers:
+        - name: cart
+          image: {{ .Values.registry }}/cart:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: CART_SERVICE_PORT
+              value: "8080"
+            - name: ASPNETCORE_URLS
+              value: "http://*:8080"
+            - name: VALKEY_ADDR
+              value: "valkey:6379"
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4317"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 160Mi
+---
+# ─── checkout ─────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: checkout
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: checkout
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: checkout
+        app.kubernetes.io/component: checkoutservice
+    spec:
+      serviceAccountName: otel-demo
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:latest
+          command: ["sh", "-c", "until nc -z -v -w30 kafka 9092; do echo waiting for kafka; sleep 2; done;"]
+      containers:
+        - name: checkout
+          image: {{ .Values.registry }}/checkout:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: CHECKOUT_SERVICE_PORT
+              value: "8080"
+            - name: CART_SERVICE_ADDR
+              value: "cart:8080"
+            - name: CURRENCY_SERVICE_ADDR
+              value: "currency:8080"
+            - name: EMAIL_SERVICE_ADDR
+              value: "http://email:8080"
+            - name: PAYMENT_SERVICE_ADDR
+              value: "payment:8080"
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "product-catalog:8080"
+            - name: SHIPPING_SERVICE_ADDR
+              value: "shipping:8080"
+            - name: KAFKA_SERVICE_ADDR
+              value: "kafka:9092"
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4317"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 20Mi
+---
+# ─── currency ─────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: currency
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: currency
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: currency
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: currency
+        app.kubernetes.io/component: currencyservice
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: currency
+          image: {{ .Values.registry }}/currency:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: CURRENCY_SERVICE_PORT
+              value: "8080"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4317"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 20Mi
+---
+# ─── email ────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: email
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: email
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: email
+        app.kubernetes.io/component: emailservice
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: email
+          image: {{ .Values.registry }}/email:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: EMAIL_SERVICE_PORT
+              value: "8080"
+            - name: APP_ENV
+              value: production
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4318/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 100Mi
+---
+# ─── flagd ────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flagd
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: flagd
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flagd
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: flagd
+        app.kubernetes.io/component: flagd
+    spec:
+      serviceAccountName: otel-demo
+      initContainers:
+        - name: init-config
+          image: busybox
+          command: ["sh", "-c", "cp /config-ro/demo.flagd.json /config-rw/demo.flagd.json"]
+          volumeMounts:
+            - mountPath: /config-ro
+              name: config-ro
+            - mountPath: /config-rw
+              name: config-rw
+      containers:
+        - name: flagd
+          image: ghcr.io/open-feature/flagd:v0.11.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /flagd-build
+            - start
+            - --uri
+            - file:./etc/flagd/demo.flagd.json
+          ports:
+            - containerPort: 8013
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: FLAGD_METRICS_EXPORTER
+              value: otel
+            - name: FLAGD_OTEL_COLLECTOR_URI
+              value: "$(OTEL_COLLECTOR_NAME):4317"
+          resources:
+            limits:
+              memory: 75Mi
+          volumeMounts:
+            - name: config-rw
+              mountPath: /etc/flagd
+        - name: flagd-ui
+          image: {{ .Values.registry }}/flagd-ui:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 4000
+              name: ui
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: FLAGD_METRICS_EXPORTER
+              value: otel
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4318"
+          resources:
+            limits:
+              memory: 75Mi
+          volumeMounts:
+            - mountPath: /app/data
+              name: config-rw
+      volumes:
+        - name: config-rw
+          emptyDir: {}
+        - name: config-ro
+          configMap:
+            name: flagd-config
+---
+# ─── fraud-detection ──────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-detection
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: fraud-detection
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fraud-detection
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fraud-detection
+        app.kubernetes.io/component: frauddetectionservice
+    spec:
+      serviceAccountName: otel-demo
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:latest
+          command: ["sh", "-c", "until nc -z -v -w30 kafka 9092; do echo waiting for kafka; sleep 2; done;"]
+      containers:
+        - name: fraud-detection
+          image: {{ .Values.registry }}/fraud-detection:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: KAFKA_SERVICE_ADDR
+              value: "kafka:9092"
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4318"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 300Mi
+---
+# ─── frontend ─────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: frontend
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/component: frontend
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: frontend
+          image: {{ .Values.registry }}/frontend:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: FRONTEND_PORT
+              value: "8080"
+            - name: FRONTEND_ADDR
+              value: ":8080"
+            - name: AD_SERVICE_ADDR
+              value: "ad:9099"
+            - name: CART_SERVICE_ADDR
+              value: "cart:8080"
+            - name: CHECKOUT_SERVICE_ADDR
+              value: "checkout:8080"
+            - name: CURRENCY_SERVICE_ADDR
+              value: "currency:8080"
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "product-catalog:8080"
+            - name: RECOMMENDATION_SERVICE_ADDR
+              value: "recommendation:8080"
+            - name: SHIPPING_SERVICE_ADDR
+              value: "shipping:8080"
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_COLLECTOR_HOST
+              value: "$(OTEL_COLLECTOR_NAME)"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4317"
+            - name: WEB_OTEL_SERVICE_NAME
+              value: frontend-web
+            - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: "http://localhost:8080/otlp-http/v1/traces"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 250Mi
+          securityContext:
+            runAsUser: 1001
+            runAsGroup: 1001
+            runAsNonRoot: true
+---
+# ─── frontend-proxy ───────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-proxy
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: frontend-proxy
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend-proxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend-proxy
+        app.kubernetes.io/component: frontendproxy
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: frontend-proxy
+          image: {{ .Values.registry }}/frontend-proxy:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: ENVOY_PORT
+              value: "8080"
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: FLAGD_UI_HOST
+              value: "flagd"
+            - name: FLAGD_UI_PORT
+              value: "4000"
+            - name: FRONTEND_HOST
+              value: "frontend"
+            - name: FRONTEND_PORT
+              value: "8080"
+            - name: IMAGE_PROVIDER_HOST
+              value: "image-provider"
+            - name: IMAGE_PROVIDER_PORT
+              value: "8081"
+            - name: LOCUST_WEB_HOST
+              value: "load-generator"
+            - name: LOCUST_WEB_PORT
+              value: "8089"
+            - name: OTEL_COLLECTOR_HOST
+              value: "$(OTEL_COLLECTOR_NAME)"
+            - name: OTEL_COLLECTOR_PORT_GRPC
+              value: "4317"
+            - name: OTEL_COLLECTOR_PORT_HTTP
+              value: "4318"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 50Mi
+          securityContext:
+            runAsUser: 101
+            runAsGroup: 101
+            runAsNonRoot: true
+---
+# ─── image-provider ───────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-provider
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: image-provider
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: image-provider
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: image-provider
+        app.kubernetes.io/component: imageprovider
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: image-provider
+          image: {{ .Values.registry }}/image-provider:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8081
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: IMAGE_PROVIDER_PORT
+              value: "8081"
+            - name: OTEL_COLLECTOR_PORT_GRPC
+              value: "4317"
+            - name: OTEL_COLLECTOR_HOST
+              value: "$(OTEL_COLLECTOR_NAME)"
+          resources:
+            limits:
+              memory: 50Mi
+---
+# ─── kafka ────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: kafka
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kafka
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kafka
+        app.kubernetes.io/component: kafka
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: kafka
+          image: {{ .Values.registry }}/kafka:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 9092
+              name: plaintext
+            - containerPort: 9093
+              name: controller
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka:9092"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4318"
+            - name: KAFKA_HEAP_OPTS
+              value: "-Xmx400M -Xms400M"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 600Mi
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+---
+# ─── load-generator ───────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: load-generator
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: load-generator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: load-generator
+        app.kubernetes.io/component: loadgenerator
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: load-generator
+          image: {{ .Values.registry }}/load-generator:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8089
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: LOCUST_WEB_PORT
+              value: "8089"
+            - name: LOCUST_USERS
+              value: "10"
+            - name: LOCUST_SPAWN_RATE
+              value: "1"
+            - name: LOCUST_HOST
+              value: "http://frontend-proxy:8080"
+            - name: LOCUST_HEADLESS
+              value: "false"
+            - name: LOCUST_AUTOSTART
+              value: "true"
+            - name: LOCUST_BROWSER_TRAFFIC_ENABLED
+              value: "true"
+            - name: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
+              value: python
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4317"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 1500Mi
+---
+# ─── payment ──────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: payment
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: payment
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: payment
+        app.kubernetes.io/component: paymentservice
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: payment
+          image: {{ .Values.registry }}/payment:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: PAYMENT_SERVICE_PORT
+              value: "8080"
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4317"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 120Mi
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+---
+# ─── product-catalog ──────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-catalog
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: product-catalog
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: product-catalog
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: product-catalog
+        app.kubernetes.io/component: productcatalogservice
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: product-catalog
+          image: {{ .Values.registry }}/product-catalog:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: PRODUCT_CATALOG_SERVICE_PORT
+              value: "8080"
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4317"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 20Mi
+---
+# ─── quote ────────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quote
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: quote
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: quote
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: quote
+        app.kubernetes.io/component: quoteservice
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: quote
+          image: {{ .Values.registry }}/quote:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: QUOTE_SERVICE_PORT
+              value: "8080"
+            - name: OTEL_PHP_AUTOLOAD_ENABLED
+              value: "true"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4318"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 40Mi
+          securityContext:
+            runAsUser: 33
+            runAsGroup: 33
+            runAsNonRoot: true
+---
+# ─── recommendation ───────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: recommendation
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: recommendation
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: recommendation
+        app.kubernetes.io/component: recommendationservice
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: recommendation
+          image: {{ .Values.registry }}/recommendation:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: RECOMMENDATION_SERVICE_PORT
+              value: "8080"
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "product-catalog:8080"
+            - name: OTEL_PYTHON_LOG_CORRELATION
+              value: "true"
+            - name: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
+              value: python
+            - name: FLAGD_HOST
+              value: "flagd"
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4317"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 500Mi
+---
+# ─── shipping ─────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: shipping
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: shipping
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: shipping
+        app.kubernetes.io/component: shippingservice
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: shipping
+          image: {{ .Values.registry }}/shipping:{{ .Values.imageTag }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: {{ .Values.otelCollectorName }}
+            - name: SHIPPING_SERVICE_PORT
+              value: "8080"
+            - name: QUOTE_SERVICE_ADDR
+              value: "http://quote:8080"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(OTEL_COLLECTOR_NAME):4317"
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+          resources:
+            limits:
+              memory: 20Mi
+---
+# ─── valkey ───────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: valkey
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: valkey
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: valkey
+        app.kubernetes.io/component: valkey
+    spec:
+      serviceAccountName: otel-demo
+      containers:
+        - name: valkey
+          image: valkey/valkey:7.2-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 6379
+              name: valkey
+          resources:
+            limits:
+              memory: 20Mi
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 1000
+            runAsNonRoot: true

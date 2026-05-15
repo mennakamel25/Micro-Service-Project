@@ -1,0 +1,328 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: accounting
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: accounting
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: accounting
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ad
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: ad
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ad
+  ports:
+    - port: 9099
+      targetPort: 9099
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: cart
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: cart
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: checkout
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: checkout
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: currency
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: currency
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: currency
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: email
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: email
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: email
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flagd
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: flagd
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: flagd
+  ports:
+    - port: 8013
+      targetPort: 8013
+      name: tcp-service
+    - port: 4000
+      targetPort: 4000
+      name: tcp-ui
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fraud-detection
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: fraud-detection
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: fraud-detection
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: frontend
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: frontend
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-proxy
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: frontend-proxy
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: frontend-proxy
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-provider
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: image-provider
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: image-provider
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: kafka
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: kafka
+  ports:
+    - port: 9092
+      targetPort: 9092
+      name: plaintext
+    - port: 9093
+      targetPort: 9093
+      name: controller
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: load-generator
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: load-generator
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: load-generator
+  ports:
+    - port: 8089
+      targetPort: 8089
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: payment
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: payment
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-catalog
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: product-catalog
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: product-catalog
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quote
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: quote
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: quote
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: recommendation
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: recommendation
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shipping
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: shipping
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: shipping
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: tcp-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: valkey
+    {{- include "otel-demo.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: valkey
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: valkey

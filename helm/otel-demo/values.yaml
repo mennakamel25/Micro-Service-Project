@@ -1,0 +1,262 @@
+registry: 532334935385.dkr.ecr.us-west-2.amazonaws.com
+imageTag: "latest"
+imagePullPolicy: Always
+
+namespace: otel-demo
+
+otelCollectorName: otelcol
+otelCollectorEndpointGrpc: "4317"
+otelCollectorEndpointHttp: "4318"
+
+services:
+  accounting:
+    image: accounting
+    port: null
+    memory: 120Mi
+    env:
+      KAFKA_SERVICE_ADDR: "kafka:9092"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4318"
+    waitFor: kafka
+
+  ad:
+    image: ad
+    port: 9099
+    memory: 300Mi
+    env:
+      AD_SERVICE_PORT: "9099"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4318"
+      OTEL_LOGS_EXPORTER: "otlp"
+
+  cart:
+    image: cart
+    port: 8080
+    memory: 160Mi
+    env:
+      CART_SERVICE_PORT: "8080"
+      ASPNETCORE_URLS: "http://*:$(CART_SERVICE_PORT)"
+      VALKEY_ADDR: "valkey:6379"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4317"
+    waitFor: valkey
+
+  checkout:
+    image: checkout
+    port: 8080
+    memory: 20Mi
+    env:
+      CHECKOUT_SERVICE_PORT: "8080"
+      CART_SERVICE_ADDR: "cart:8080"
+      CURRENCY_SERVICE_ADDR: "currency:8080"
+      EMAIL_SERVICE_ADDR: "http://email:8080"
+      PAYMENT_SERVICE_ADDR: "payment:8080"
+      PRODUCT_CATALOG_SERVICE_ADDR: "product-catalog:8080"
+      SHIPPING_SERVICE_ADDR: "shipping:8080"
+      KAFKA_SERVICE_ADDR: "kafka:9092"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4317"
+    waitFor: kafka
+
+  currency:
+    image: currency
+    port: 8080
+    memory: 20Mi
+    env:
+      CURRENCY_SERVICE_PORT: "8080"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4317"
+      VERSION: "1.0.0"
+
+  email:
+    image: email
+    port: 8080
+    memory: 100Mi
+    env:
+      EMAIL_SERVICE_PORT: "8080"
+      APP_ENV: "production"
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4318/v1/traces"
+
+  flagd:
+    image: "ghcr.io/open-feature/flagd:v0.11.1"
+    useFullImage: true
+    port: 8013
+    memory: 75Mi
+
+  flagd-ui:
+    image: flagd-ui
+    port: 4000
+    memory: 75Mi
+    env:
+      FLAGD_METRICS_EXPORTER: "otel"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4318"
+
+  fraud-detection:
+    image: fraud-detection
+    port: null
+    memory: 300Mi
+    env:
+      KAFKA_SERVICE_ADDR: "kafka:9092"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4318"
+    waitFor: kafka
+
+  frontend:
+    image: frontend
+    port: 8080
+    memory: 250Mi
+    securityContext:
+      runAsUser: 1001
+      runAsGroup: 1001
+      runAsNonRoot: true
+    env:
+      FRONTEND_PORT: "8080"
+      FRONTEND_ADDR: ":8080"
+      AD_SERVICE_ADDR: "ad:9099"
+      CART_SERVICE_ADDR: "cart:8080"
+      CHECKOUT_SERVICE_ADDR: "checkout:8080"
+      CURRENCY_SERVICE_ADDR: "currency:8080"
+      PRODUCT_CATALOG_SERVICE_ADDR: "product-catalog:8080"
+      RECOMMENDATION_SERVICE_ADDR: "recommendation:8080"
+      SHIPPING_SERVICE_ADDR: "shipping:8080"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      OTEL_COLLECTOR_HOST: "$(OTEL_COLLECTOR_NAME)"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4317"
+      WEB_OTEL_SERVICE_NAME: "frontend-web"
+      PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://localhost:8080/otlp-http/v1/traces"
+
+  frontend-proxy:
+    image: frontend-proxy
+    port: 8080
+    memory: 50Mi
+    securityContext:
+      runAsUser: 101
+      runAsGroup: 101
+      runAsNonRoot: true
+    env:
+      ENVOY_PORT: "8080"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      FLAGD_UI_HOST: "flagd"
+      FLAGD_UI_PORT: "4000"
+      FRONTEND_HOST: "frontend"
+      FRONTEND_PORT: "8080"
+      IMAGE_PROVIDER_HOST: "image-provider"
+      IMAGE_PROVIDER_PORT: "8081"
+      LOCUST_WEB_HOST: "load-generator"
+      LOCUST_WEB_PORT: "8089"
+      OTEL_COLLECTOR_HOST: "$(OTEL_COLLECTOR_NAME)"
+      OTEL_COLLECTOR_PORT_GRPC: "4317"
+      OTEL_COLLECTOR_PORT_HTTP: "4318"
+
+  image-provider:
+    image: image-provider
+    port: 8081
+    memory: 50Mi
+    env:
+      IMAGE_PROVIDER_PORT: "8081"
+      OTEL_COLLECTOR_PORT_GRPC: "4317"
+      OTEL_COLLECTOR_HOST: "$(OTEL_COLLECTOR_NAME)"
+
+  kafka:
+    image: kafka
+    port: 9092
+    port2: 9093
+    memory: 600Mi
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+    env:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4318"
+      KAFKA_HEAP_OPTS: "-Xmx400M -Xms400M"
+
+  load-generator:
+    image: load-generator
+    port: 8089
+    memory: 1500Mi
+    env:
+      LOCUST_WEB_PORT: "8089"
+      LOCUST_USERS: "10"
+      LOCUST_SPAWN_RATE: "1"
+      LOCUST_HOST: "http://frontend-proxy:8080"
+      LOCUST_HEADLESS: "false"
+      LOCUST_AUTOSTART: "true"
+      LOCUST_BROWSER_TRAFFIC_ENABLED: "true"
+      PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: "python"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4317"
+
+  payment:
+    image: payment
+    port: 8080
+    memory: 120Mi
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+    env:
+      PAYMENT_SERVICE_PORT: "8080"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4317"
+
+  product-catalog:
+    image: product-catalog
+    port: 8080
+    memory: 20Mi
+    env:
+      PRODUCT_CATALOG_SERVICE_PORT: "8080"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4317"
+
+  quote:
+    image: quote
+    port: 8080
+    memory: 40Mi
+    securityContext:
+      runAsUser: 33
+      runAsGroup: 33
+      runAsNonRoot: true
+    env:
+      QUOTE_SERVICE_PORT: "8080"
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4318"
+
+  recommendation:
+    image: recommendation
+    port: 8080
+    memory: 500Mi
+    env:
+      RECOMMENDATION_SERVICE_PORT: "8080"
+      PRODUCT_CATALOG_SERVICE_ADDR: "product-catalog:8080"
+      OTEL_PYTHON_LOG_CORRELATION: "true"
+      PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: "python"
+      FLAGD_HOST: "flagd"
+      FLAGD_PORT: "8013"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4317"
+
+  shipping:
+    image: shipping
+    port: 8080
+    memory: 20Mi
+    env:
+      SHIPPING_SERVICE_PORT: "8080"
+      QUOTE_SERVICE_ADDR: "http://quote:8080"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://$(OTEL_COLLECTOR_NAME):4317"
+
+  valkey:
+    image: "valkey/valkey:7.2-alpine"
+    useFullImage: true
+    port: 6379
+    memory: 20Mi
+    securityContext:
+      runAsUser: 999
+      runAsGroup: 1000
+      runAsNonRoot: true
