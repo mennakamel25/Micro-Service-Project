@@ -2,46 +2,62 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:  
+    branches:
+      - main
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
 
 jobs:
 
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        service:
+          - accounting
+          - cart
+          - currency
+          - flagd-ui
+          - fraud-detection
+          - product-catalog
+          - image-provider
+          - load-generator
+          - checkout
+          - payment
+          - shipping
+          - recommendation
+          - frontend
+          - frontend-proxy
+          - email
+          - ad
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version: 1.22
-
-      - name: Run Tests
-        run: |
-          cd src/product-catalog
-          go test ./...
-
-  docker:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
+      - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build & Push Image
+      - name: Build Docker image
         run: |
-          IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/product-catalog:${{ github.run_number }}
+          IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${{ matrix.service }}:${{ github.run_number }}
 
-          docker build -t $IMAGE src/product-catalog
+          docker build \
+            -t $IMAGE \
+            ./src/${{ matrix.service }}
+
+      - name: Push Docker image
+        run: |
+          IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${{ matrix.service }}:${{ github.run_number }}
+
           docker push $IMAGE
