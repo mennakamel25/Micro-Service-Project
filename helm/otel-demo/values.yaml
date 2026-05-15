@@ -1,5 +1,5 @@
 registry: 532334935385.dkr.ecr.us-west-2.amazonaws.com
-imageTag: "latest"
+
 imagePullPolicy: Always
 
 namespace: otel-demo
