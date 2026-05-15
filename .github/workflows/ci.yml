@@ -1,9 +1,12 @@
 name: product-catalog-ci
 
 on:
-  pull_request:
-    branches:
-      - main
+    push:
+        branches:
+        - main
+    pull_request:
+        branches:
+        - main
 
 jobs:
 
