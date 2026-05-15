@@ -8,6 +8,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -15,7 +16,7 @@ jobs:
         with:
           go-version: 1.22
 
-      - name: Test
+      - name: Run Tests
         run: |
           cd src/product-catalog
           go test ./...
@@ -27,38 +28,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: AWS login
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login ECR
+      - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build & Push
+      - name: Build & Push Image
         run: |
           IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/product-catalog:${{ github.run_number }}
 
           docker build -t $IMAGE src/product-catalog
           docker push $IMAGE
-
-  update-manifest:
-    needs: docker
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update image tag
-        run: |
-          sed -i "s|image: .*|image: $IMAGE|" kubernetes/productcatalog/deploy.yaml
-
-      - name: Commit changes
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add kubernetes/productcatalog/deploy.yaml
-          git commit -m "update image tag"
-          git push
