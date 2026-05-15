@@ -16,27 +16,71 @@ jobs:
 
     strategy:
       matrix:
-       include:
+        include:
 
-          - accounting
-           - service: cart
+          - service: accounting
+            context: ./src/accounting
+            dockerfile: ./src/accounting/Dockerfile
+
+          - service: cart
             context: ./src/cart
             dockerfile: ./src/cart/src/Dockerfile
 
-          - currency
-          - flagd-ui
-          - fraud-detection
-          - product-catalog
-          - image-provider
-          - load-generator
-          - checkout
-          - payment
-          - shipping
-          - recommendation
-          - frontend
-          - frontend-proxy
-          - email
-          - ad
+          - service: currency
+            context: ./src/currency
+            dockerfile: ./src/currency/Dockerfile
+
+          - service: flagd-ui
+            context: ./src/flagd-ui
+            dockerfile: ./src/flagd-ui/Dockerfile
+
+          - service: fraud-detection
+            context: ./src/fraud-detection
+            dockerfile: ./src/fraud-detection/Dockerfile
+
+          - service: product-catalog
+            context: ./src/product-catalog
+            dockerfile: ./src/product-catalog/Dockerfile
+
+          - service: image-provider
+            context: ./src/image-provider
+            dockerfile: ./src/image-provider/Dockerfile
+
+          - service: load-generator
+            context: ./src/load-generator
+            dockerfile: ./src/load-generator/Dockerfile
+
+          - service: checkout
+            context: ./src/checkout
+            dockerfile: ./src/checkout/Dockerfile
+
+          - service: payment
+            context: ./src/payment
+            dockerfile: ./src/payment/Dockerfile
+
+          - service: shipping
+            context: ./src/shipping
+            dockerfile: ./src/shipping/Dockerfile
+
+          - service: recommendation
+            context: ./src/recommendation
+            dockerfile: ./src/recommendation/Dockerfile
+
+          - service: frontend
+            context: ./src/frontend
+            dockerfile: ./src/frontend/Dockerfile
+
+          - service: frontend-proxy
+            context: ./src/frontend-proxy
+            dockerfile: ./src/frontend-proxy/Dockerfile
+
+          - service: email
+            context: ./src/email
+            dockerfile: ./src/email/Dockerfile
+
+          - service: ad
+            context: ./src/ad
+            dockerfile: ./src/ad/Dockerfile
 
     steps:
       - name: Checkout code
@@ -57,8 +101,9 @@ jobs:
           IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${{ matrix.service }}:${{ github.run_number }}
 
           docker build \
+            -f ${{ matrix.dockerfile }} \
             -t $IMAGE \
-            ./src/${{ matrix.service }}
+            ${{ matrix.context }}
 
       - name: Push Docker image
         run: |
