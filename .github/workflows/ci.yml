@@ -22,8 +22,9 @@ jobs:
         include:
 
           - service: accounting
-            dockerfile: /src/accounting/Dockerfile
+            dockerfile: ./src/accounting/Dockerfile
             context: .
+            build_args: --build-arg TARGETARCH=amd64
 
           - service: ad
             dockerfile: ./src/ad/Dockerfile
