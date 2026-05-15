@@ -21,83 +21,63 @@ jobs:
       matrix:
         include:
           - service: accounting
-            context: ./src/accounting
             dockerfile: ./src/accounting/Dockerfile
 
           - service: ad
-            context: ./src/ad
             dockerfile: ./src/ad/Dockerfile
 
           - service: cart
-            context: ./src/cart
             dockerfile: ./src/cart/src/Dockerfile
 
           - service: checkout
-            context: ./src/checkout
             dockerfile: ./src/checkout/Dockerfile
 
           - service: currency
-            context: ./src/currency
             dockerfile: ./src/currency/Dockerfile
 
           - service: email
-            context: ./src/email
             dockerfile: ./src/email/Dockerfile
 
           - service: flagd-ui
-            context: ./src/flagd-ui
             dockerfile: ./src/flagd-ui/Dockerfile
 
           - service: fraud-detection
-            context: ./src/fraud-detection
             dockerfile: ./src/fraud-detection/Dockerfile
 
           - service: frontend
-            context: ./src/frontend
             dockerfile: ./src/frontend/Dockerfile
 
           - service: frontend-proxy
-            context: ./src/frontend-proxy
             dockerfile: ./src/frontend-proxy/Dockerfile
 
           - service: image-provider
-            context: ./src/image-provider
             dockerfile: ./src/image-provider/Dockerfile
 
           - service: kafka
-            context: ./src/kafka
             dockerfile: ./src/kafka/Dockerfile
 
           - service: load-generator
-            context: ./src/load-generator
             dockerfile: ./src/load-generator/Dockerfile
 
           - service: opensearch
-            context: ./src/opensearch
             dockerfile: ./src/opensearch/Dockerfile
 
           - service: payment
-            context: ./src/payment
             dockerfile: ./src/payment/Dockerfile
 
           - service: postgres
-            context: ./src/postgres
             dockerfile: ./src/postgres/Dockerfile
 
           - service: product-catalog
-            context: ./src/product-catalog
             dockerfile: ./src/product-catalog/Dockerfile
 
           - service: quote
-            context: ./src/quote
             dockerfile: ./src/quote/Dockerfile
 
           - service: recommendation
-            context: ./src/recommendation
             dockerfile: ./src/recommendation/Dockerfile
 
           - service: shipping
-            context: ./src/shipping
             dockerfile: ./src/shipping/Dockerfile
 
     steps:
@@ -117,14 +97,14 @@ jobs:
       - name: Build Docker image
         run: |
           IMAGE=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.service }}:${{ github.run_number }}
-          
+
           docker build \
             -t $IMAGE \
             -f ${{ matrix.dockerfile }} \
-            ${{ matrix.context }}
+            .
 
       - name: Push Docker image
         run: |
           IMAGE=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ matrix.service }}:${{ github.run_number }}
-          
+
           docker push $IMAGE
