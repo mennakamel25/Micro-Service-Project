@@ -4,17 +4,13 @@ metadata:
   name: otel-demo
   namespace: argocd
 spec:
-  project: default
-
   source:
-    repoURL: https://github.com/<your-repo>
+    repoURL: https://github.com/mennakamel25/Micro-Service-Project
     targetRevision: main
     path: helm/otel-demo
-
   destination:
     server: https://kubernetes.default.svc
     namespace: otel-demo
-
   syncPolicy:
     automated:
       prune: true
