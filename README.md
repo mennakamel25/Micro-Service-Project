@@ -258,10 +258,13 @@ The cluster state is **always driven by Git** — no manual `kubectl apply` is n
 ---
 
 ## Screenshots
-
 ![ArgoCD Application Sync](Screenshot%20from%202026-05-15%2007-05-08.png)
+
 ![EKS Cluster Overview](Screenshot%20from%202026-05-15%2005-22-19.png)
+
 ![Infrastructure Provisioning](Screenshot%20from%202026-05-09%2022-42-48.png)
+
+![Flow Project](ChatGPT%20Image%20Jun%204%2C%202026%2C%2005_34_09%20AM.png)
 
 ---
 
